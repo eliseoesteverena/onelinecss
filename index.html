@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Herramienta de Procesamiento CSS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background-color: #f0f0f0;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            padding: 20px;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Nuevos estilos para la descripción */
+        .description-panel {
+            background-color: #ffffff;
+            border-left: 4px solid #4CAF50;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            width: 100%;
+            max-width: 800px;
+            color: #444;
+            line-height: 1.6;
+        }
+
+        .description-panel h2 {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .description-panel p {
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+        }
+
+        .description-panel ul {
+            margin-left: 20px;
+            font-size: 0.95rem;
+        }
+
+        .description-panel li {
+            margin-bottom: 5px;
+        }
+        
+        .btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin: 10px;
+            transition: background-color 0.3s;
+        }
+        
+        .btn:hover {
+            background-color: #45a049;
+        }
+        
+        #paste-btn {
+            font-size: 18px;
+            padding: 15px 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .result-container {
+            width: 100%;
+            height: 100%;
+            min-height: 300px;
+            margin: 20px 0;
+            position: relative;
+            display: none;
+        }
+        
+        #result {
+            width: 100%;
+            height: 100%;
+            min-height: 300px;
+            border: 1px solid #ccc;
+            padding: 15px;
+            background-color: white;
+            white-space: pre-wrap;
+            overflow-y: auto;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .copy-btn-container {
+            position: sticky;
+            bottom: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+        
+        #copy-btn {
+            position: relative;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-bottom: 5px;
+            display: none;
+        }
+        
+        header {
+            background-color: #333;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            width: 100%;
+        }
+        
+        footer {
+            background-color: #333;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            width: 100%;
+            margin-top: auto;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            #result {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Herramienta de Procesamiento CSS</h1>
+    </header>
+    
+    <div class="container">
+        <!-- Panel de descripción añadido -->
+        <div class="description-panel">
+            <h2>¿Qué hace esta herramienta?</h2>
+            <p>Este procesador optimiza tu código CSS de manera local haciéndolo más compacto. Es ideal para limpiar hojas de estilo de forma rápida y mantener tus archivos ligeros sin depender de librerías o CDNs de terceros.</p>
+            <ul>
+                <li><strong>Comprime reglas:</strong> Elimina saltos de línea innecesarios después de puntos y comas (<code>;</code>) y llaves (<code>{ }</code>).</li>
+                <li><strong>Protege Media Queries:</strong> Detecta y aísla tus bloques <code>@media</code> para procesarlos con seguridad sin romper su estructura base.</li>
+                <li><strong>Flujo directo:</strong> Haz clic en "Pegar" para leer tu portapapeles directamente y obtén el código minimizado en un solo paso.</li>
+            </ul>
+        </div>
+
+        <button id="paste-btn" class="btn">Pegar</button>
+        
+        <div class="result-container">
+            <div id="result"></div>
+            <div class="copy-btn-container">
+                <button id="copy-btn" class="btn">
+                    Copiar
+                    <span class="tooltip">¡Copiado!</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>Procesador de código CSS - Elimina saltos de línea innecesarios</p>
+    </footer>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const pasteBtn = document.getElementById('paste-btn');
+            const copyBtn = document.getElementById('copy-btn');
+            const resultContainer = document.querySelector('.result-container');
+            const resultElement = document.getElementById('result');
+            const tooltip = document.querySelector('.tooltip');
+            
+            pasteBtn.addEventListener('click', async function() {
+                try {
+                    // Solicitar permiso para acceder al portapapeles
+                    const cssText = await navigator.clipboard.readText();
+                    if (cssText) {
+                        const processedCss = processCss(cssText);
+                        resultElement.textContent = processedCss;
+                        resultContainer.style.display = 'block';
+                        // Desplazarse al resultado
+                        resultElement.scrollIntoView({ behavior: 'smooth' });
+                    }
+                } catch (err) {
+                    alert('No se pudo acceder al portapapeles. Por favor, verifica que hayas dado los permisos necesarios.');
+                    console.error('Error al acceder al portapapeles:', err);
+                    // Ofrecer una caja de texto como alternativa
+                    const cssText = prompt('Por favor, pega tu código CSS aquí:');
+                    if (cssText) {
+                        const processedCss = processCss(cssText);
+                        resultElement.textContent = processedCss;
+                        resultContainer.style.display = 'block';
+                    }
+                }
+            });
+            
+            copyBtn.addEventListener('click', async function() {
+                try {
+                    const processedCss = resultElement.textContent;
+                    await navigator.clipboard.writeText(processedCss);
+                    
+                    // Mostrar tooltip de confirmación
+                    tooltip.style.display = 'block';
+                    setTimeout(() => {
+                        tooltip.style.display = 'none';
+                    }, 2000);
+                } catch (err) {
+                    alert('No se pudo copiar al portapapeles. Por favor, selecciona y copia manualmente.');
+                    console.error('Error al copiar al portapapeles:', err);
+                }
+            });
+            
+            // Función para procesar el CSS
+            function processCss(cssText) {
+                // Paso 1: Guardar los media queries para tratarlos por separado
+                const mediaQueryRegex = /@media[^{]*\{([^{}]|[\r\n])*\}/g;
+                const mediaQueries = cssText.match(mediaQueryRegex) || [];
+                
+                // Reemplazar temporalmente los media queries con un marcador
+                let processedCss = cssText;
+                mediaQueries.forEach((mediaQuery, index) => {
+                    processedCss = processedCss.replace(mediaQuery, `__MEDIA_QUERY_${index}__`);
+                });
+                
+                // Paso 2: Procesar el CSS normal (sin los media queries)
+                
+                // Después de punto y coma ';', eliminar salto de línea y agregar espacio
+                processedCss = processedCss.replace(/;(\s*\n\s*)/g, '; ');
+                
+                // Después de apertura de llaves '{', eliminar salto de línea
+                processedCss = processedCss.replace(/\{(\s*\n\s*)/g, '{ ');
+                
+                // Antes de cierre de llaves '}', eliminar salto de línea
+                processedCss = processedCss.replace(/(\s*\n\s*)\}/g, ' }');
+                
+                // Paso 3: Procesar los media queries
+                const processedMediaQueries = mediaQueries.map(mediaQuery => {
+                    // Encontrar la primera llave de apertura y mantener el salto de línea después de ella
+                    const firstBraceIndex = mediaQuery.indexOf('{');
+                    if (firstBraceIndex !== -1) {
+                        const beforeBrace = mediaQuery.substring(0, firstBraceIndex + 1);
+                        let afterBrace = mediaQuery.substring(firstBraceIndex + 1);
+                        
+                        // Procesar el contenido dentro del media query, pero manteniendo el salto después de la primera llave
+                        afterBrace = afterBrace
+                            .replace(/;(\s*\n\s*)/g, '; ')
+                            .replace(/\{(\s*\n\s*)/g, '{ ')
+                            .replace(/(\s*\n\s*)\}/g, ' }');
+                        
+                        return beforeBrace + afterBrace;
+                    }
+                    return mediaQuery;
+                });
+                
+                // Paso 4: Reincorporar los media queries procesados
+                mediaQueries.forEach((mediaQuery, index) => {
+                    processedCss = processedCss.replace(`__MEDIA_QUERY_${index}__`, processedMediaQueries[index]);
+                });
+                
+                return processedCss;
+            }
+        });
+    </script>
+</body>
+</html>
