@@ -200,7 +200,7 @@
         <p>Procesador de código CSS - Elimina saltos de línea innecesarios</p>
     </footer>
     
-    <script>
+<script>
         document.addEventListener('DOMContentLoaded', function() {
             const pasteBtn = document.getElementById('paste-btn');
             const copyBtn = document.getElementById('copy-btn');
@@ -210,19 +210,17 @@
             
             pasteBtn.addEventListener('click', async function() {
                 try {
-                    // Solicitar permiso para acceder al portapapeles
                     const cssText = await navigator.clipboard.readText();
                     if (cssText) {
                         const processedCss = processCss(cssText);
                         resultElement.textContent = processedCss;
                         resultContainer.style.display = 'block';
-                        // Desplazarse al resultado
                         resultElement.scrollIntoView({ behavior: 'smooth' });
                     }
                 } catch (err) {
                     alert('No se pudo acceder al portapapeles. Por favor, verifica que hayas dado los permisos necesarios.');
                     console.error('Error al acceder al portapapeles:', err);
-                    // Ofrecer una caja de texto como alternativa
+                    
                     const cssText = prompt('Por favor, pega tu código CSS aquí:');
                     if (cssText) {
                         const processedCss = processCss(cssText);
@@ -237,7 +235,6 @@
                     const processedCss = resultElement.textContent;
                     await navigator.clipboard.writeText(processedCss);
                     
-                    // Mostrar tooltip de confirmación
                     tooltip.style.display = 'block';
                     setTimeout(() => {
                         tooltip.style.display = 'none';
@@ -248,54 +245,26 @@
                 }
             });
             
-            // Función para procesar el CSS
+            // Función para procesar el CSS asegurando un output idéntico sin importar el input original
             function processCss(cssText) {
-                // Paso 1: Guardar los media queries para tratarlos por separado
-                const mediaQueryRegex = /@media[^{]*\{([^{}]|[\r\n])*\}/g;
-                const mediaQueries = cssText.match(mediaQueryRegex) || [];
+                // 1. Normalizar: Convertimos cualquier tipo de espacio (saltos, tabulaciones, múltiples espacios) 
+                // en un solo espacio. Esto iguala la base para cualquier input.
+                let processed = cssText.replace(/\s+/g, ' ').trim();
                 
-                // Reemplazar temporalmente los media queries con un marcador
-                let processedCss = cssText;
-                mediaQueries.forEach((mediaQuery, index) => {
-                    processedCss = processedCss.replace(mediaQuery, `__MEDIA_QUERY_${index}__`);
-                });
+                // 2. Estructurar: Estandarizamos los espacios obligatorios alrededor de los caracteres clave.
+                processed = processed
+                    .replace(/\s*{\s*/g, ' { ')    // Espacio antes y después de abrir llave
+                    .replace(/\s*}\s*/g, ' } ')    // Espacio antes y después de cerrar llave
+                    .replace(/\s*;\s*/g, '; ');    // Solo un espacio después del punto y coma
                 
-                // Paso 2: Procesar el CSS normal (sin los media queries)
+                // 3. Formatear: Añadimos un salto de línea estrictamente después de cerrar cada regla.
+                // Esto fuerza a que cada regla quede en su propia línea siempre.
+                processed = processed.replace(/}\s*/g, '}\n');
                 
-                // Después de punto y coma ';', eliminar salto de línea y agregar espacio
-                processedCss = processedCss.replace(/;(\s*\n\s*)/g, '; ');
+                // 4. Limpiar: Eliminamos espacios dobles residuales que pudieran haber quedado
+                processed = processed.replace(/ {2,}/g, ' ').trim();
                 
-                // Después de apertura de llaves '{', eliminar salto de línea
-                processedCss = processedCss.replace(/\{(\s*\n\s*)/g, '{ ');
-                
-                // Antes de cierre de llaves '}', eliminar salto de línea
-                processedCss = processedCss.replace(/(\s*\n\s*)\}/g, ' }');
-                
-                // Paso 3: Procesar los media queries
-                const processedMediaQueries = mediaQueries.map(mediaQuery => {
-                    // Encontrar la primera llave de apertura y mantener el salto de línea después de ella
-                    const firstBraceIndex = mediaQuery.indexOf('{');
-                    if (firstBraceIndex !== -1) {
-                        const beforeBrace = mediaQuery.substring(0, firstBraceIndex + 1);
-                        let afterBrace = mediaQuery.substring(firstBraceIndex + 1);
-                        
-                        // Procesar el contenido dentro del media query, pero manteniendo el salto después de la primera llave
-                        afterBrace = afterBrace
-                            .replace(/;(\s*\n\s*)/g, '; ')
-                            .replace(/\{(\s*\n\s*)/g, '{ ')
-                            .replace(/(\s*\n\s*)\}/g, ' }');
-                        
-                        return beforeBrace + afterBrace;
-                    }
-                    return mediaQuery;
-                });
-                
-                // Paso 4: Reincorporar los media queries procesados
-                mediaQueries.forEach((mediaQuery, index) => {
-                    processedCss = processedCss.replace(`__MEDIA_QUERY_${index}__`, processedMediaQueries[index]);
-                });
-                
-                return processedCss;
+                return processed;
             }
         });
     </script>
