@@ -3,229 +3,240 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Herramienta de Procesamiento CSS</title>
+    <title>CSS Optimizer</title>
     <style>
+        :root {
+            --bg-color: #f8fafc;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --accent: #10b981;
+            --accent-hover: #059669;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --surface: #ffffff;
+            --border: #e2e8f0;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Arial', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
-        
+
         body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
             display: flex;
             flex-direction: column;
             min-height: 100vh;
-            background-color: #f0f0f0;
         }
-        
-        .container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+
+        /* Contenedor principal que empuja el footer hacia abajo */
+        main {
             flex: 1;
-            padding: 20px;
             width: 100%;
-            max-width: 1200px;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px 100px 20px; /* Padding inferior grande para que el botón sticky no tape el texto */
+        }
+
+        header {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+        }
+
+        p.description {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            max-width: 500px;
             margin: 0 auto;
         }
 
-        /* Nuevos estilos para la descripción */
-        .description-panel {
-            background-color: #ffffff;
-            border-left: 4px solid #4CAF50;
-            padding: 20px;
-            margin-bottom: 25px;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            width: 100%;
-            max-width: 800px;
-            color: #444;
+        /* Estado inicial / Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            background: var(--surface);
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            color: var(--text-muted);
+            transition: opacity 0.3s ease;
+        }
+
+        /* Contenedor del resultado (oculto por defecto) */
+        .result-wrapper {
+            display: none;
+            background: var(--code-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            animation: slideUp 0.4s ease-out forwards;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .result-title {
+            color: #94a3b8;
+            font-size: 0.85rem;
+            font-family: monospace;
+        }
+
+        .btn-copy {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-copy:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        pre {
+            padding: 16px;
+            margin: 0;
+            overflow-x: auto;
+            color: var(--code-text);
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
             line-height: 1.6;
         }
 
-        .description-panel h2 {
-            font-size: 1.2rem;
-            margin-bottom: 10px;
-            color: #333;
-        }
-
-        .description-panel p {
-            margin-bottom: 15px;
-            font-size: 0.95rem;
-        }
-
-        .description-panel ul {
-            margin-left: 20px;
-            font-size: 0.95rem;
-        }
-
-        .description-panel li {
-            margin-bottom: 5px;
-        }
-        
-        .btn {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 16px;
-            cursor: pointer;
-            border-radius: 4px;
-            margin: 10px;
-            transition: background-color 0.3s;
-        }
-        
-        .btn:hover {
-            background-color: #45a049;
-        }
-        
-        #paste-btn {
-            font-size: 18px;
-            padding: 15px 30px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        
-        .result-container {
+        /* ZONA DEL CTA PERSISTENTE */
+        .sticky-cta-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
             width: 100%;
-            height: 100%;
-            min-height: 300px;
-            margin: 20px 0;
-            position: relative;
-            display: none;
-        }
-        
-        #result {
-            width: 100%;
-            height: 100%;
-            min-height: 300px;
-            border: 1px solid #ccc;
-            padding: 15px;
-            background-color: white;
-            white-space: pre-wrap;
-            overflow-y: auto;
-            border-radius: 4px;
-            font-family: monospace;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-        
-        .copy-btn-container {
-            position: sticky;
-            bottom: 20px;
-            width: 100%;
+            padding: 20px;
+            background: linear-gradient(transparent, var(--bg-color) 30%);
             display: flex;
             justify-content: center;
+            pointer-events: none; /* Permite clickear el fondo si es necesario */
+            z-index: 100;
         }
-        
-        #copy-btn {
-            position: relative;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
-        
-        .tooltip {
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: #333;
+
+        .btn-paste {
+            pointer-events: auto; /* Reactiva clicks para el botón */
+            background-color: var(--accent);
             color: white;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 12px;
-            margin-bottom: 5px;
-            display: none;
-        }
-        
-        header {
-            background-color: #333;
-            color: white;
-            padding: 15px;
-            text-align: center;
+            border: none;
+            border-radius: 99px; /* Botón tipo píldora */
+            padding: 18px 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
             width: 100%;
+            max-width: 400px;
+            justify-content: center;
         }
-        
-        footer {
-            background-color: #333;
-            color: white;
-            padding: 10px;
-            text-align: center;
-            width: 100%;
-            margin-top: auto;
+
+        .btn-paste:active {
+            transform: scale(0.96);
         }
-        
-        @media (max-width: 768px) {
-            .container {
-                padding: 15px;
-            }
-            
-            #result {
-                font-size: 12px;
-            }
+
+        .btn-paste:hover {
+            background-color: var(--accent-hover);
+            box-shadow: 0 15px 30px -5px rgba(16, 185, 129, 0.5);
+        }
+
+        .btn-paste svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 600px) {
+            main { padding: 30px 15px 120px 15px; }
+            .btn-paste { padding: 16px 20px; font-size: 1rem; }
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1>Herramienta de Procesamiento CSS</h1>
-    </header>
-    
-    <div class="container">
-        <!-- Panel de descripción añadido -->
-        <div class="description-panel">
-            <h2>¿Qué hace esta herramienta?</h2>
-            <p>Este procesador optimiza tu código CSS de manera local haciéndolo más compacto. Es ideal para limpiar hojas de estilo de forma rápida y mantener tus archivos ligeros sin depender de librerías o CDNs de terceros.</p>
-            <ul>
-                <li><strong>Comprime reglas:</strong> Elimina saltos de línea innecesarios después de puntos y comas (<code>;</code>) y llaves (<code>{ }</code>).</li>
-                <li><strong>Protege Media Queries:</strong> Detecta y aísla tus bloques <code>@media</code> para procesarlos con seguridad sin romper su estructura base.</li>
-                <li><strong>Flujo directo:</strong> Haz clic en "Pegar" para leer tu portapapeles directamente y obtén el código minimizado en un solo paso.</li>
-            </ul>
+
+    <main>
+        <header>
+            <h1>CSS Optimizer</h1>
+            <p class="description">Procesa y estandariza tu CSS. Limpia saltos de línea y unifica reglas asegurando un formato determinista de una línea por regla.</p>
+        </header>
+
+        <div id="empty-state" class="empty-state">
+            <p>El código procesado aparecerá aquí.</p>
         </div>
 
-        <button id="paste-btn" class="btn">Pegar</button>
-        
-        <div class="result-container">
-            <div id="result"></div>
-            <div class="copy-btn-container">
-                <button id="copy-btn" class="btn">
-                    Copiar
-                    <span class="tooltip">¡Copiado!</span>
+        <div id="result-wrapper" class="result-wrapper">
+            <div class="result-header">
+                <span class="result-title">output.css</span>
+                <button id="copy-btn" class="btn-copy">
+                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    <span id="copy-text">Copiar</span>
                 </button>
             </div>
+            <pre id="result"></pre>
         </div>
+    </main>
+
+    <!-- CTA Persistente -->
+    <div class="sticky-cta-container">
+        <button id="paste-btn" class="btn-paste">
+            <svg viewBox="0 0 24 24"><path d="M19 2h-4.18C14.4.84 13.3 0 12 0c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 18H5V4h2v3h10V4h2v16z"/></svg>
+            Pegar y Procesar
+        </button>
     </div>
-    
-    <footer>
-        <p>Procesador de código CSS - Elimina saltos de línea innecesarios</p>
-    </footer>
-    
-<script>
+
+    <script>
         document.addEventListener('DOMContentLoaded', function() {
             const pasteBtn = document.getElementById('paste-btn');
             const copyBtn = document.getElementById('copy-btn');
-            const resultContainer = document.querySelector('.result-container');
+            const copyText = document.getElementById('copy-text');
+            const resultWrapper = document.getElementById('result-wrapper');
             const resultElement = document.getElementById('result');
-            const tooltip = document.querySelector('.tooltip');
+            const emptyState = document.getElementById('empty-state');
             
             pasteBtn.addEventListener('click', async function() {
                 try {
                     const cssText = await navigator.clipboard.readText();
                     if (cssText) {
-                        const processedCss = processCss(cssText);
-                        resultElement.textContent = processedCss;
-                        resultContainer.style.display = 'block';
-                        resultElement.scrollIntoView({ behavior: 'smooth' });
+                        renderResult(cssText);
                     }
                 } catch (err) {
-                    alert('No se pudo acceder al portapapeles. Por favor, verifica que hayas dado los permisos necesarios.');
-                    console.error('Error al acceder al portapapeles:', err);
-                    
-                    const cssText = prompt('Por favor, pega tu código CSS aquí:');
+                    // Fallback visual silencioso en caso de bloqueo de permisos
+                    const cssText = prompt('Permiso denegado al portapapeles.\n\nPor favor, pega tu código CSS aquí:');
                     if (cssText) {
-                        const processedCss = processCss(cssText);
-                        resultElement.textContent = processedCss;
-                        resultContainer.style.display = 'block';
+                        renderResult(cssText);
                     }
                 }
             });
@@ -235,33 +246,42 @@
                     const processedCss = resultElement.textContent;
                     await navigator.clipboard.writeText(processedCss);
                     
-                    tooltip.style.display = 'block';
+                    // Feedback visual en el botón
+                    const originalText = copyText.textContent;
+                    copyText.textContent = '¡Copiado!';
+                    copyBtn.style.background = 'rgba(16, 185, 129, 0.3)'; // Tinte verde
+                    
                     setTimeout(() => {
-                        tooltip.style.display = 'none';
+                        copyText.textContent = originalText;
+                        copyBtn.style.background = '';
                     }, 2000);
                 } catch (err) {
-                    alert('No se pudo copiar al portapapeles. Por favor, selecciona y copia manualmente.');
-                    console.error('Error al copiar al portapapeles:', err);
+                    alert('No se pudo copiar al portapapeles. Selecciona el texto manualmente.');
                 }
             });
+
+            function renderResult(rawCss) {
+                const processedCss = processCss(rawCss);
+                resultElement.textContent = processedCss;
+                
+                // Cambiar estados UI
+                emptyState.style.display = 'none';
+                resultWrapper.style.display = 'block';
+                
+                // Animación de scroll suave hacia el inicio del código
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
             
-            // Función para procesar el CSS asegurando un output idéntico sin importar el input original
+            // Función determinista para procesar el CSS
             function processCss(cssText) {
-                // 1. Normalizar: Convertimos cualquier tipo de espacio (saltos, tabulaciones, múltiples espacios) 
-                // en un solo espacio. Esto iguala la base para cualquier input.
                 let processed = cssText.replace(/\s+/g, ' ').trim();
                 
-                // 2. Estructurar: Estandarizamos los espacios obligatorios alrededor de los caracteres clave.
                 processed = processed
-                    .replace(/\s*{\s*/g, ' { ')    // Espacio antes y después de abrir llave
-                    .replace(/\s*}\s*/g, ' } ')    // Espacio antes y después de cerrar llave
-                    .replace(/\s*;\s*/g, '; ');    // Solo un espacio después del punto y coma
+                    .replace(/\s*{\s*/g, ' { ')
+                    .replace(/\s*}\s*/g, ' } ')
+                    .replace(/\s*;\s*/g, '; ');
                 
-                // 3. Formatear: Añadimos un salto de línea estrictamente después de cerrar cada regla.
-                // Esto fuerza a que cada regla quede en su propia línea siempre.
                 processed = processed.replace(/}\s*/g, '}\n');
-                
-                // 4. Limpiar: Eliminamos espacios dobles residuales que pudieran haber quedado
                 processed = processed.replace(/ {2,}/g, ' ').trim();
                 
                 return processed;
